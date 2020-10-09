@@ -1,0 +1,23 @@
+name: offline-agent
+base: core18
+confinement: strict 
+grade: stable
+summary: Agent to sideload a snap installation
+version: "0.1"
+description: |
+      Node.js service to sideload snap installations
+apps:
+  service:
+    command: bin/node $SNAP/index.js
+    daemon: simple
+    plugs:
+        - network-bind
+        - snapd-control
+        - home
+        - removable-media
+
+parts:
+  service:
+    plugin: nodejs
+    source: .
+    nodejs-version: "10.16.3"

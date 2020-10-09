@@ -1,37 +1,32 @@
 'use strict'
 
+const http = require('http');
 const snapd = require('./snapd');
-const fs = require('fs');
 
 const downloadPath = '/mnt/';
 
-let args = process.argv.slice(2);
-if (args.length < 2) {
-    console.log('The snap name and revision must be provided');
-    return;
-}
-
-const snapName = args[0];
-const revision = args[1];
-
-const assertsPath = downloadPath + snapName + '_' + revision + '.assert';
-const snapPath = downloadPath + snapName + '_' + revision + '.snap';
-
-console.log(assertsPath);
-console.log(snapPath);
-
-// acknowledge the snap assertion
-fs.readFile(assertsPath, 'utf8', (err,data) => {
-    if (err) {
-        return console.log(err);
+var server = http.createServer((req, res) => {
+    // parse the URL
+    let args = req.url.split('/');
+    if (args.length != 3) {
+        res.end('Incorrect URL format: /snap-name/revision\n\n');
+        return;
     }
-    console.log(data);
 
-    snapd.ack(data);
+    // sideload the snap
+    const snapName = args[1];
+    const revision = args[2];
+    let client = new snapd(downloadPath);
+    client.sideloadInstall(snapName, revision)
+        .then(resp => {
+            res.end(JSON.stringify(resp));
+        })
+        .catch(e => {
+            res.end(JSON.stringify(e));
+        });
+
 });
 
+server.listen(5000, '127.0.0.1');
 
-// base64-encode the snap file
-
-// install the snap
-
+console.log('Agent installer service at http://localhost:5000 is running...')
